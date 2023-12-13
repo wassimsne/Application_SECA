@@ -17,13 +17,14 @@ class Program
             Console.WriteLine("\nMenu:");
             Console.WriteLine("1. Créer une nouvelle borne");
             Console.WriteLine("2. Afficher les détails d'une borne");
-            Console.WriteLine("3. Mettre à jour les détails d'une borne");
-            Console.WriteLine("4. Supprimer une borne");
-            Console.WriteLine("5. Créer un nouveau proprietaire");
-            Console.WriteLine("6. Afficher les détails du proprietaire");
-            Console.WriteLine("7. Mettre à jour les détails du proprietaire");
-            Console.WriteLine("8. Supprimer un proprietaire");
-            Console.WriteLine("5. Quitter");
+            Console.WriteLine("3. Afficher tout les bornes");
+            Console.WriteLine("4. Mettre à jour les détails d'une borne");
+            Console.WriteLine("5. Supprimer une borne");
+            Console.WriteLine("6. Créer un nouveau proprietaire");
+            Console.WriteLine("7. Afficher les détails du proprietaire");
+            Console.WriteLine("8. Mettre à jour les détails du proprietaire");
+            Console.WriteLine("9. Supprimer un proprietaire");
+            Console.WriteLine("10. Quitter");
 
             Console.Write("Entrez votre choix: ");
             string choix = Console.ReadLine();
@@ -34,10 +35,10 @@ class Program
                     await CreerBorne();
                     break;
                 case "2":
-                    await AfficherBorne();
+                    await Afficher1Borne();
                     break;
                 case "3":
-                   // await MettreAJourBorne();
+                    await Afficher_tout_Borne();
                     break;
                 case "4":
                    // await SupprimerBorne();
@@ -51,6 +52,28 @@ class Program
                     break;
             }
         }
+    }
+
+    static async Task<Borne[]> AffichertoutBorne()
+    {
+
+
+        using (HttpClient client = new HttpClient())
+        {
+            HttpResponseMessage response = await client.GetAsync($"{apiUrl}");
+
+            if (response.IsSuccessStatusCode)
+            { 
+                 
+                string jsonResult = await response.Content.ReadAsStringAsync();
+                Borne[] bornes = JsonConvert.DeserializeObject<Borne[]>(jsonResult);
+            
+                return bornes;
+            }
+            return null;
+        }
+
+
     }
 
     static async Task CreerBorne()
@@ -98,42 +121,51 @@ class Program
         Console.WriteLine("Borne ajoutée avec succès!");
     }
 
-    static async Task AfficherBorne()
+    static async Task Afficher1Borne()
     {
         Console.Write("Entrez l'ID de la borne à afficher: ");
         int id = Convert.ToInt32(Console.ReadLine());
 
-        Borne borne = await GetBorne(id);
+        Borne borne = await GetBornebyid(id);
 
         if (borne != null)
             Console.WriteLine(borne);
         else
             Console.WriteLine($"Borne avec l'ID {id} n'a pas été trouvée.");
     }
+    static async Task Afficher_tout_Borne()
+    {
+        Borne[] bornes = await AffichertoutBorne();
 
-   /* static async Task MettreAJourBorne()
+        if (bornes != null)
+        {
+            foreach (var borne in bornes)
+            {
+                Console.WriteLine(borne);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Aucune borne trouvée ou une erreur s'est produite lors de la récupération des données.");
+        }
+    }
+
+    static async Task MettreAJourBorne()
     {
         Console.Write("Entrez l'ID de la borne à mettre à jour: ");
         int id = Convert.ToInt32(Console.ReadLine());
 
-        Borne borne = await GetBorne(id);
+        Borne borne = await GetBornebyid(id);
 
         if (borne != null)
         {
             Console.WriteLine("Modifier les détails de la borne:");
-            Console.Write("Nouveau nom de la borne (Appuyez sur Entrée pour ne pas changer): ");
-            string nom = Console.ReadLine();
+            Console.Write("Nouveau nom de la borne : ");
+            string Ip = Console.ReadLine();
 
-            Console.Write("Nouveau type de la borne (Appuyez sur Entrée pour ne pas changer): ");
-            string typeBorne = Console.ReadLine();
+            
 
-            if (!string.IsNullOrEmpty(nom))
-                borne.Nom = nom;
-
-            if (!string.IsNullOrEmpty(typeBorne))
-                borne.TypeBorne = typeBorne;
-
-            await PutBorne(id, borne);
+            await PutBorne(borne);
 
             Console.WriteLine("Détails de la borne mis à jour avec succès!");
         }
@@ -141,7 +173,7 @@ class Program
         {
             Console.WriteLine($"Borne avec l'ID {id} n'a pas été trouvée.");
         }
-    }*/
+    }
 
     static async Task SupprimerBorne()
     {
@@ -153,7 +185,7 @@ class Program
         Console.WriteLine($"Borne avec l'ID {id} a été supprimée.");
     }
 
-    static async Task<Borne> GetBorne(int id)
+    static async Task<Borne> GetBornebyid(int id)
     {
         using (HttpClient client = new HttpClient())
         {
@@ -185,14 +217,14 @@ class Program
         }
     }
 
-    static async Task PutBorne(int id, Borne borne)
+    static async Task PutBorne(Borne borne)
     {
         using (HttpClient client = new HttpClient())
         {
             string jsonBorne = JsonConvert.SerializeObject(borne);
             HttpContent content = new StringContent(jsonBorne, System.Text.Encoding.UTF8, "application/json");
 
-            HttpResponseMessage response = await client.PutAsync($"{apiUrl}/{id}", content);
+            HttpResponseMessage response = await client.PutAsync($"{apiUrl}/{borne.Id}", content);
 
             if (!response.IsSuccessStatusCode)
             {
